@@ -19,10 +19,23 @@ amqp.connect("amqp://localhost", function (error0, connection) {
 
     channel.consume(
       queue,
-      function (msg) {
-        var url = msg.content.toString();
-        runScraper(url);
-        console.log(" [x] Received %s", url);
+      async function (msg) {
+        try {
+          var url = msg.content.toString();
+          console.log(" [x] Received %s", url);
+
+          // Run the scraper
+          await runScraper(url);
+
+          // Acknowledge the message
+          channel.ack(msg);
+          console.log(" [x] Message processed and acknowledged");
+        } catch (error) {
+          console.error("Error processing message:", error);
+
+          // Optionally, reject the message and requeue it
+          channel.nack(msg, false, true);
+        }
       },
       {
         // automatic acknowledgment mode,
